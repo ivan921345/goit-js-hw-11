@@ -57,9 +57,9 @@ function IntersectionObserverCallback(entries) {
   });
 }
 
-function fetchImages(url, targetToSearch) {
-  const response = axios
-    .get(`${url}?`, {
+async function fetchImages(url, targetToSearch) {
+  try {
+    const response = await axios.get(`${url}?`, {
       params: {
         key: URL_KEY,
         q: targetToSearch,
@@ -69,11 +69,15 @@ function fetchImages(url, targetToSearch) {
         per_page: 40,
         page: page,
       },
-    })
-    .then(resp => resp.data);
+    });
 
-  page++;
-  return response;
+    const data = response.data;
+
+    page++;
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
 }
 function createMarkup(arr) {
   return arr
@@ -110,19 +114,19 @@ function onSubmit(e) {
   e.preventDefault();
   clearUi();
   page = 1;
-  fetchImages(BASE_URL, e.target.children.searchQuery.value).then(
-    ({ hits, totalHits }) => {
-      if (hits.length === 0) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-        return;
-      }
-      refs.infinityScrollTarget.classList.remove('hideGuard');
-      Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
-      refs.galleryContainer.insertAdjacentHTML('beforeend', createMarkup(hits));
+  const response = fetchImages(BASE_URL, e.target.children.searchQuery.value);
+  console.log(response);
+  response.then(({ hits, totalHits }) => {
+    if (hits.length === 0) {
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+      return;
     }
-  );
+    refs.infinityScrollTarget.classList.remove('hideGuard');
+    Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
+    refs.galleryContainer.insertAdjacentHTML('beforeend', createMarkup(hits));
+  });
 }
 
 function onGalleryClick(e) {
